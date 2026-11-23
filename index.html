@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>售后替代料号查询</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f6f8;
+    color: #1a1a1a;
+    line-height: 1.6;
+    padding: 32px 20px;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .head { margin-bottom: 28px; }
+  .head h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.3px; }
+  .head p { color: #6b7280; font-size: 14px; margin-top: 6px; }
+
+  .panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+  }
+
+  .input-row { display: flex; gap: 12px; align-items: stretch; }
+  .input-row input {
+    flex: 1;
+    padding: 13px 16px;
+    font-size: 15px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  .input-row input:focus { border-color: #2563eb; }
+  .input-row input::placeholder { color: #9ca3af; }
+
+  button {
+    padding: 13px 28px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  button:hover:not(:disabled) { background: #1d4ed8; }
+  button:disabled { background: #9ca3af; cursor: not-allowed; }
+
+  .hint { font-size: 13px; color: #6b7280; margin-top: 12px; }
+
+  .status { display: none; margin-top: 18px; padding: 14px 16px; border-radius: 8px; font-size: 14px; }
+  .status.loading { display: block; background: #eff6ff; color: #1e40af; }
+  .status.error { display: block; background: #fef2f2; color: #b91c1c; }
+  .status.ok { display: block; background: #f0fdf4; color: #166534; }
+  .status.warn { display: block; background: #fffbeb; color: #92400e; }
+
+  .conn-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+  }
+  .conn-bar.online { background: #f0fdf4; color: #166534; }
+  .conn-bar.offline { background: #fef2f2; color: #b91c1c; }
+  .conn-bar.setup { background: #fffbeb; color: #92400e; }
+  .dot-live {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor; flex-shrink: 0;
+  }
+
+  .result { display: none; }
+  .result.show { display: block; }
+
+  .section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left;
+    padding: 10px 12px;
+    background: #f9fafb;
+    color: #6b7280;
+    font-weight: 500;
+    font-size: 12px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  td { padding: 12px; border-bottom: 1px solid #f3f4f6; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbfc; }
+  .code { font-family: "SF Mono", Consolas, monospace; font-weight: 500; color: #1e40af; }
+  .tag-2001 { background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-2002 { background: #fef3c7; color: #b45309; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+
+  .empty { text-align: center; padding: 40px 20px; color: #9ca3af; font-size: 14px; }
+
+  .copy-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #f3f4f6;
+    color: #374151;
+    border-radius: 6px;
+  }
+  .copy-btn:hover { background: #e5e7eb; }
+
+  .settings-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+    display: none;
+  }
+  .settings-box.show { display: block; }
+  .settings-box label {
+    display: block;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .settings-box input {
+    width: 100%;
+    padding: 11px 14px;
+    font-size: 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+  }
+  .settings-box input:focus { border-color: #2563eb; }
+  .settings-box .tip { font-size: 12px; color: #9ca3af; margin-top: 8px; line-height: 1.8; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn-row button { padding: 9px 18px; font-size: 13px; }
+  .btn-ghost {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+  }
+  .btn-ghost:hover { background: #e5e7eb !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>售后替代料号查询</h1>
+    <p>输入缺货的售后料号，查出可替代的其他售后料号</p>
+  </div>
+
+  <div id="connBar" class="conn-bar setup">
+    <span class="dot-live"></span>
+    <span id="connText">正在检查连接…</span>
+  </div>
+
+  <div id="settings" class="settings-box">
+    <label for="apiInput">后端服务地址</label>
+    <input id="apiInput" type="text" placeholder="https://xxxx.ngrok-free.app">
+    <div class="tip">
+      填你电脑上运行的查询服务地址（ngrok 生成的公网地址）<br>
+      例如：<code>https://a1b2-c3d4.ngrok-free.app</code>
+    </div>
+    <div class="btn-row">
+      <button id="saveApi">保存并测试</button>
+      <button id="cancelApi" class="btn-ghost">取消</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="input-row">
+      <input id="q" type="text" placeholder="输入售后料号，如 20020100006630" autocomplete="off">
+      <button id="btn">查询</button>
+    </div>
+    <div class="hint">
+      支持 2001 / 2002 开头的售后料号 · 首次查询约 2 分钟（结果缓存 24 小时）
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div id="result" class="result">
+    <div class="panel">
+      <div class="section-title">
+        可替代料号
+        <span class="badge" id="altCount">0 个</span>
+        <button class="copy-btn" id="copyAll" style="margin-left:auto">复制全部</button>
+      </div>
+      <div id="altTable"></div>
+    </div>
+  </div>
+
+  <div id="guide" class="panel" style="color:#6b7280;font-size:13.5px;line-height:2">
+    <div style="font-weight:600;color:#374151;margin-bottom:12px;font-size:14px">判定原理</div>
+    <div style="margin-bottom:16px">
+      同一个原材料如果被多个售后料号引用，这些料号在功能上是可替换的。但光看"共用原材料"不够——
+      一个原材料可能被几十个产品共用，所以还要<b>名称匹配</b>才能锁定真正可替代的。
+    </div>
+    <div style="background:#f9fafb;border-radius:8px;padding:14px 16px;font-family:Consolas,monospace;font-size:12.5px;line-height:1.9;color:#4b5563">
+20020100006630 售后抹布架组件<br>
+&nbsp;&nbsp;↓ BOM 结构<br>
+030300AA011600 抹布架组件<br>
+&nbsp;&nbsp;↓ 使用情况（205 个对象）<br>
+&nbsp;&nbsp;&nbsp;&nbsp;✅ 20020100017362 售后抹布架组件-亚欧版<br>
+&nbsp;&nbsp;&nbsp;&nbsp;❌ 20020100041577 售后左驱动轮组件（功能无关，排除）
+    </div>
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="padding:12px 14px;background:#ecfdf5;border-radius:8px">
+        <div style="font-weight:600;color:#047857;margin-bottom:4px">2001 开头</div>
+        <div style="font-size:12.5px;color:#065f46">销售配件</div>
+      </div>
+      <div style="padding:12px 14px;background:#fef3c7;border-radius:8px">
+        <div style="font-weight:600;color:#b45309;margin-bottom:4px">2002 开头</div>
+        <div style="font-size:12.5px;color:#92400e">售后组件</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let lastResult = null;
+let API_BASE = '';
+
+// ===== 配置读取 =====
+const CFG_KEY = 'altpart_api_base';
+
+function loadApiBase() {
+  // 1. 优先读 URL 参数 ?api=xxx
+  const u = new URLSearchParams(location.search);
+  if (u.get('api')) {
+    API_BASE = u.get('api').replace(/\/$/, '');
+    localStorage.setItem(CFG_KEY, API_BASE);
+    return API_BASE;
+  }
+  // 2. 读 localStorage
+  const saved = localStorage.getItem(CFG_KEY);
+  if (saved) { API_BASE = saved.replace(/\/$/, ''); return API_BASE; }
+  // 3. 本地访问时默认用同源
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+    API_BASE = '';
+    return API_BASE;
+  }
+  return '';
+}
+
+// ===== 连接状态 =====
+async function checkConn() {
+  const bar = $('connBar');
+  const txt = $('connText');
+
+  if (!API_BASE && !(location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+    bar.className = 'conn-bar setup';
+    txt.innerHTML = '尚未配置后端服务 — <a href="#" id="openCfg" style="color:#92400e;text-decoration:underline">点此配置</a>';
+    const el = $('openCfg');
+    if (el) el.onclick = (e) => { e.preventDefault(); showSettings(); };
+    $('btn').disabled = true;
+    return;
+  }
+
+  bar.className = 'conn-bar setup';
+  txt.textContent = '正在连接后端服务…';
+
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(API_BASE + '/api/ping', { signal: ctrl.signal });
+    clearTimeout(t);
+    const d = await r.json();
+    if (d.ok) {
+      bar.className = 'conn-bar online';
+      txt.innerHTML = '服务已连接 — 缓存 ' + d.cached + ' 条 · <a href="#" id="openCfg2" style="color:#166534;text-decoration:underline">修改地址</a>';
+      const el = $('openCfg2');
+      if (el) el.onclick = (e) => { e.preventDefault(); showSettings(); };
+      $('btn').disabled = false;
+    } else {
+      throw new Error('bad response');
+    }
+  } catch (e) {
+    bar.className = 'conn-bar offline';
+    txt.innerHTML = '无法连接后端服务（可能是你电脑上的服务没启动，或地址变了）— <a href="#" id="openCfg3" style="color:#b91c1c;text-decoration:underline">重新配置</a>';
+    const el = $('openCfg3');
+    if (el) el.onclick = (e) => { e.preventDefault(); showSettings(); };
+    $('btn').disabled = true;
+  }
+}
+
+function showSettings() {
+  $('apiInput').value = API_BASE;
+  $('settings').classList.add('show');
+  $('apiInput').focus();
+}
+
+// ===== 查询 =====
+function setStatus(type, html) {
+  const el = $('status');
+  el.className = 'status ' + type;
+  el.innerHTML = html;
+}
+
+async function doQuery() {
+  const code = $('q').value.trim();
+  if (!code) { setStatus('error', '请输入料号'); return; }
+  if (!/^200[12]\d{8,11}$/.test(code)) {
+    setStatus('error', '料号格式不对，需要 2001 或 2002 开头的售后料号（12-14 位）');
+    return;
+  }
+
+  $('btn').disabled = true;
+  $('result').classList.remove('show');
+  setStatus('loading', '正在查询，请稍候…（首次约 2 分钟，查过的料号秒回）');
+
+  try {
+    const r = await fetch(API_BASE + '/api/query?code=' + encodeURIComponent(code));
+    const d = await r.json();
+    lastResult = d;
+
+    if (!r.ok || d.error) {
+      setStatus('error', d.error || '查询失败');
+      return;
+    }
+
+    const alts = d.alternatives || [];
+    const unrelated = d.unrelated || [];
+    if (alts.length) {
+      setStatus('ok', '找到 ' + alts.length + ' 个功能相同的替代料号' +
+        (unrelated.length ? '（另有 ' + unrelated.length + ' 个共用原料但功能不同的已排除）' : ''));
+    } else if (unrelated.length) {
+      setStatus('warn', '没有功能相同的替代料号。有 ' + unrelated.length +
+        ' 个料号共用同一原材料，但功能不同（' + (d.inputName || '') + '），已排除。');
+    } else {
+      setStatus('error', '没有找到可替代料号。可能这个料号没有下级原材料，或原料未被其他售后料号引用。');
+    }
+
+    renderResult(d);
+    $('guide').style.display = 'none';
+    $('result').classList.add('show');
+  } catch (e) {
+    setStatus('error', '请求失败：' + e.message + '。请检查后端服务是否在运行。');
+  } finally {
+    $('btn').disabled = false;
+  }
+}
+
+function renderResult(data) {
+  const alts = data.alternatives || [];
+  const unrelated = data.unrelated || [];
+  $('altCount').textContent = alts.length + ' 个';
+
+  if (!alts.length) {
+    $('altTable').innerHTML = '<div class="empty">没有找到功能相同的替代料号</div>';
+  } else {
+    $('altTable').innerHTML = `
+      <table>
+        <thead><tr>
+          <th style="width:170px">料号</th>
+          <th>名称</th>
+          <th style="width:110px">类型</th>
+          <th style="width:160px">来源原材料</th>
+        </tr></thead>
+        <tbody>
+          ${alts.map(a => {
+            const is2001 = a.code.startsWith('2001');
+            return `<tr>
+              <td class="code">${a.code}</td>
+              <td>${a.name || '—'}</td>
+              <td><span class="${is2001 ? 'tag-2001' : 'tag-2002'}">${is2001 ? '2001 销售配件' : '2002 组件'}</span></td>
+              <td class="code" style="font-size:12px;color:#6b7280">${a.sourceMaterial}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  const old = document.getElementById('unrelatedBox');
+  if (old) old.remove();
+
+  if (unrelated.length) {
+    const div = document.createElement('div');
+    div.id = 'unrelatedBox';
+    div.style.cssText = 'margin-top:16px;padding:14px 16px;background:#fafafa;border-radius:8px;font-size:13px';
+    div.innerHTML = `
+      <div style="color:#6b7280;margin-bottom:8px">
+        已排除 ${unrelated.length} 个共用原料但功能不同的料号
+      </div>
+      <div style="color:#9ca3af;font-size:12px;line-height:1.9">
+        ${unrelated.slice(0, 12).map(u => `${u.code} <span style="color:#d1d5db">${u.name || ''}</span>`).join(' · ')}
+        ${unrelated.length > 12 ? ` 等 ${unrelated.length} 个` : ''}
+      </div>`;
+    $('altTable').parentNode.appendChild(div);
+  }
+}
+
+// ===== 事件 =====
+$('btn').onclick = doQuery;
+$('q').addEventListener('keydown', e => { if (e.key === 'Enter') doQuery(); });
+
+$('saveApi').onclick = async () => {
+  const v = $('apiInput').value.trim().replace(/\/$/, '');
+  if (!v) { alert('请填写地址'); return; }
+  API_BASE = v;
+  localStorage.setItem(CFG_KEY, API_BASE);
+  $('settings').classList.remove('show');
+  await checkConn();
+};
+
+$('cancelApi').onclick = () => { $('settings').classList.remove('show'); };
+
+$('copyAll').onclick = () => {
+  if (!lastResult) return;
+  const text = (lastResult.alternatives || []).map(a => a.code + '\t' + a.name).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    $('copyAll').textContent = '已复制';
+    setTimeout(() => $('copyAll').textContent = '复制全部', 1500);
+  });
+};
+
+// ===== 初始化 =====
+loadApiBase();
+checkConn();
+setInterval(checkConn, 60000);
+</script>
+</body>
+</html>

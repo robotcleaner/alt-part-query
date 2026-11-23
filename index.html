@@ -287,7 +287,10 @@ async function checkConn() {
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(API_BASE + '/api/ping', { signal: ctrl.signal });
+    const r = await fetch(API_BASE + '/api/ping', {
+      signal: ctrl.signal,
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     clearTimeout(t);
     const d = await r.json();
     if (d.ok) {
@@ -334,7 +337,9 @@ async function doQuery() {
   setStatus('loading', '正在查询，请稍候…（首次约 2 分钟，查过的料号秒回）');
 
   try {
-    const r = await fetch(API_BASE + '/api/query?code=' + encodeURIComponent(code));
+    const r = await fetch(API_BASE + '/api/query?code=' + encodeURIComponent(code), {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
+    });
     const d = await r.json();
     lastResult = d;
 

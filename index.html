@@ -304,7 +304,15 @@ async function checkConn() {
     }
   } catch (e) {
     bar.className = 'conn-bar offline';
-    txt.innerHTML = '无法连接后端服务（可能是你电脑上的服务没启动，或地址变了）— <a href="#" id="openCfg3" style="color:#b91c1c;text-decoration:underline">重新配置</a>';
+    txt.innerHTML =
+      '<div style="font-weight:600;margin-bottom:6px">查询服务未连接</div>' +
+      '<div style="font-size:12.5px;line-height:1.9">' +
+      '在运行服务的电脑上双击 <b>一键启动全部.bat</b>，等 20 秒后 ' +
+      '<a href="#" id="retryConn" style="color:#b91c1c;text-decoration:underline">点此重试</a>' +
+      ' · <a href="#" id="openCfg3" style="color:#b91c1c;text-decoration:underline">修改服务地址</a>' +
+      '</div>';
+    const r2 = $('retryConn');
+    if (r2) r2.onclick = (ev) => { ev.preventDefault(); checkConn(); };
     const el = $('openCfg3');
     if (el) el.onclick = (e) => { e.preventDefault(); showSettings(); };
     $('btn').disabled = true;

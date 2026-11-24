@@ -169,8 +169,11 @@
 <body>
 <div class="wrap">
   <div class="head">
-    <h1>售后替代料号查询</h1>
-    <p>输入缺货的售后料号，查出可替代的其他售后料号</p>
+    <div>
+      <h1>售后替代料号查询</h1>
+      <p>输入缺货的售后料号，查出可替代的其他售后料号</p>
+    </div>
+    <a id="statsLink" href="#" style="display:none;font-size:12.5px;color:#9ca3af;text-decoration:none;white-space:nowrap" title="查询统计看板">统计 →</a>
   </div>
 
   <div id="connBar" class="conn-bar setup">
@@ -455,6 +458,14 @@ $('copyAll').onclick = () => {
 loadApiBase();
 checkConn();
 setInterval(checkConn, 60000);
+
+// 统计看板入口：配置了后端才显示
+(function initStatsLink() {
+  const el = $('statsLink');
+  if (!API_BASE) return;
+  el.href = API_BASE + '/stats';
+  el.style.display = 'inline-block';
+})();
 </script>
 </body>
 </html>
